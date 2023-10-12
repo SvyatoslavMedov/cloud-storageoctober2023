@@ -23,6 +23,7 @@ public class MainController implements Initializable {
     // Platform.runLater(()->{})
     private void updateClientView() {
         Platform.runLater(()-> {
+            clientPath.setText(currentDirectory.getAbsolutePath());
             clientView.getItems().clear();
             clientView.getItems().add("...");
             clientView.getItems().addAll(currentDirectory.list());
