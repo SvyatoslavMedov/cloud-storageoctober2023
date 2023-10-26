@@ -12,14 +12,13 @@ public class CloudFileHandler implements Runnable {
 
     private static final int BUFFER_SIZE = 8192;
     private final DataInputStream is;
-    private final DataOutputStream os;
     private final byte[] buf;
     private File serverDirectory;
 
     public CloudFileHandler(Socket socket) throws IOException {
         System.out.println("Client connected!");
         is = new DataInputStream(socket.getInputStream());
-        os = new DataOutputStream(socket.getOutputStream());
+        DataOutputStream os = new DataOutputStream(socket.getOutputStream());
         buf = new byte[BUFFER_SIZE];
         serverDirectory = new File("server");
     }
@@ -49,6 +48,5 @@ public class CloudFileHandler implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 }
