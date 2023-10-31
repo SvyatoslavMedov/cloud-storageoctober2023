@@ -10,6 +10,8 @@ import java.io.*;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.file.FileSystems;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class MainController implements Initializable {
@@ -38,6 +40,16 @@ public class MainController implements Initializable {
         });
     }
 
+    private void updateServerView(List<String> names) {
+        Platform.runLater(()-> {
+
+            serverView.getItems().clear();
+            serverView.getItems().add("...");
+            serverView.getItems().addAll(names);
+        });
+
+    }
+
     public void download(ActionEvent actionEvent) {
     }
 
@@ -58,12 +70,34 @@ public class MainController implements Initializable {
         }
     }
 
+    private void readFromInputStream() {
+        try{
+            while (true) {
+                String command =  is.readUTF();
+                if("#list#".equals(command)){
+                    List<String> names = new ArrayList<>();
+                    int count = is.readInt();
+                    for (int i = 0; i < count; i++) {
+                        String name = is.readUTF();
+                        names.add(name);
+                    }
+                    updateServerView(names);
+                }
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void initNetwork() {
         try{
             buf = new byte[BUFFER_SIZE];
             Socket socket = new Socket("localhost", 8189);
             is = new DataInputStream(socket.getInputStream());
             os = new DataOutputStream(socket.getOutputStream());
+            Thread readThread = new Thread(this :: readFromInputStream);
+            readThread.setDaemon(true);
+            readThread.start();
         }catch (Exception e) {
             e.printStackTrace();
         }
@@ -72,8 +106,6 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         currentDirectory = new File(System.getProperty("user.home"));
-
-
         FileSystems.getDefault().getFileStores().forEach(
                 System.out::println
         );

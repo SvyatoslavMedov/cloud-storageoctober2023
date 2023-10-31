@@ -7,20 +7,44 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class CloudFileHandler implements Runnable {
 
     private static final int BUFFER_SIZE = 8192;
     private final DataInputStream is;
+    private final DataOutputStream os;
     private final byte[] buf;
     private File serverDirectory;
 
     public CloudFileHandler(Socket socket) throws IOException {
         System.out.println("Client connected!");
         is = new DataInputStream(socket.getInputStream());
-        DataOutputStream os = new DataOutputStream(socket.getOutputStream());
+        os = new DataOutputStream(socket.getOutputStream());
         buf = new byte[BUFFER_SIZE];
         serverDirectory = new File("server");
+        sendSeverFiles();
+
+    }
+
+    private List<String > getServerFiles() {
+        String[] names = serverDirectory.list();
+        if (names != null) {
+            return Arrays.asList(names);
+        }
+        return new ArrayList<>();
+    }
+
+
+    private void sendSeverFiles () throws IOException {
+        os.writeUTF("#list#");
+        List<String> files = getServerFiles();
+        os.writeInt(files.size());
+        for (String file : files) {
+            os.writeUTF(file);
+        }
     }
 
     @Override
@@ -40,7 +64,8 @@ public class CloudFileHandler implements Runnable {
                             fos.write(buf, 0, readCount);
                         }
                     }
-                    System.out.println("File: " + name + " is uploaded");
+                    System.out.println("File: " + name + " was uploaded");
+                    sendSeverFiles();
                 } else {
                     System.err.println("Unknown command: " + command);
                 }
