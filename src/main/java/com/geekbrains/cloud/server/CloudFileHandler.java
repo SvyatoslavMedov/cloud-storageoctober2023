@@ -1,11 +1,6 @@
 package com.geekbrains.cloud.server;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +21,7 @@ public class CloudFileHandler implements Runnable {
         buf = new byte[BUFFER_SIZE];
         serverDirectory = new File("server");
         sendSeverFiles();
+        sendCurrentDirName();
 
     }
 
@@ -35,6 +31,12 @@ public class CloudFileHandler implements Runnable {
             return Arrays.asList(names);
         }
         return new ArrayList<>();
+    }
+
+    private void sendCurrentDirName() throws IOException {
+        os.writeUTF("#path#");
+        os.writeUTF(serverDirectory.getName());
+
     }
 
 
@@ -66,7 +68,21 @@ public class CloudFileHandler implements Runnable {
                     }
                     System.out.println("File: " + name + " was uploaded");
                     sendSeverFiles();
-                } else {
+                } else if ("#get_file#".equals(command)) {
+                    String fileName = is.readUTF();
+                    File file = serverDirectory.toPath().resolve(fileName).toFile();
+                    os.writeUTF("#file_message#");
+                    os.writeUTF(fileName);
+                    os.writeLong(file.length());
+                    try (InputStream fis = new FileInputStream(file)){
+                        while (fis.available() > 0) {
+                            int count = fis.read(buf);
+                            os.write(buf,0,count);
+                        }
+                    }
+                    os.flush();
+                }
+                else {
                     System.err.println("Unknown command: " + command);
                 }
             }

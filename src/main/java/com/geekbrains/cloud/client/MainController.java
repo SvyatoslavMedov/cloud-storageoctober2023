@@ -50,7 +50,11 @@ public class MainController implements Initializable {
 
     }
 
-    public void download(ActionEvent actionEvent) {
+    public void download(ActionEvent actionEvent) throws IOException {
+        os.writeUTF("#get_file#");
+        os.writeUTF(serverView.getSelectionModel().getSelectedItem());
+        os.flush();
+
     }
 
     public void upload(ActionEvent actionEvent) throws IOException {
@@ -82,6 +86,26 @@ public class MainController implements Initializable {
                         names.add(name);
                     }
                     updateServerView(names);
+                }
+                if("#path#".equals(command)) {
+                    String serverDir = is.readUTF();
+                    Platform.runLater(()-> serverPath.setText(serverDir));
+                }
+                if ("#file_message#".equals(command)) {
+                    String name = is.readUTF();
+                    long size = is.readLong();
+                    File newFile = currentDirectory.toPath()
+                            .resolve(name)
+                            .toFile();
+                    try (OutputStream fos = new FileOutputStream(newFile)) {
+                        for (int i = 0; i < (size + BUFFER_SIZE - 1) / BUFFER_SIZE; i++) {
+                            int readCount = is.read(buf);
+                            fos.write(buf, 0, readCount);
+                        }
+                    }
+
+                    updateClientView();
+
                 }
             }
         }catch (Exception e) {
